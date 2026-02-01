@@ -74,13 +74,13 @@ class SensorSimulator:
         )
     
     def get_light_ldr(self) -> SensorData:
-        """Simula LDR luz (0-1023 en escala de Arduino)"""
-        value = 500 + 400 * np.sin(self.time_step * 0.002) + np.random.normal(0, 50)
-        value = np.clip(value, 0, 1023)
+        """Simula LDR luz (0-100%)"""
+        value = 50 + 40 * np.sin(self.time_step * 0.002) + np.random.normal(0, 3)
+        value = np.clip(value, 0, 100)
         return SensorData(
             timestamp=self.time_step,
             value=value,
-            unit="0-1023"
+            unit="%"
         )
     
     def get_flame_sensor(self) -> DigitalSensorData:
@@ -108,13 +108,13 @@ class SensorSimulator:
         )
     
     def get_potentiometer(self) -> SensorData:
-        """Simula potenciómetro (0-255 o 0-1023)"""
-        value = 127.5 + 120 * np.sin(self.time_step * 0.02) + np.random.normal(0, 5)
-        value = np.clip(value, 0, 255)
+        """Simula potenciómetro (0-100%)"""
+        value = 50 + 45 * np.sin(self.time_step * 0.02) + np.random.normal(0, 2)
+        value = np.clip(value, 0, 100)
         return SensorData(
             timestamp=self.time_step,
             value=value,
-            unit="0-255"
+            unit="%"
         )
     
     def get_joystick(self) -> JoystickData:

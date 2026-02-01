@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFrame
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFrame, QGridLayout
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPainter, QPen, QBrush, QFont
 import pyqtgraph as pg
 from collections import deque
@@ -17,10 +17,12 @@ class LineGraphWidget(QWidget):
         self.data_points = deque(maxlen=100)
         
         layout = QVBoxLayout()
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
         
         # Título
         title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
         
         # Gráfico PyQtGraph
@@ -30,13 +32,14 @@ class LineGraphWidget(QWidget):
         self.plot_widget.setTitle(title)
         self.plot_widget.setBackground('w')
         self.plot_widget.setYRange(min_val, max_val)
+        self.plot_widget.setMinimumHeight(140)
         
         self.curve = self.plot_widget.plot(pen=pg.mkPen('b', width=2))
         layout.addWidget(self.plot_widget)
         
         # Label de valor actual
         self.value_label = QLabel("Valor: --")
-        self.value_label.setFont(QFont("Arial", 11))
+        self.value_label.setFont(QFont("Arial", 9))
         self.value_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.value_label)
         
@@ -72,8 +75,60 @@ class LineGraphWidget(QWidget):
         self.value_label.setStyleSheet(f"color: rgb({r},{g},{b}); font-weight: bold;")
 
 
+class SoilBarWidget(QWidget):
+    """Widget interno para pintar la barra de humedad"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(80, 140)
+
+    def paintEvent(self, event):
+        parent = self.parent()
+        value = getattr(parent, "value", 0)
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w = self.width()
+        h = self.height()
+        padding = 6
+        bar_width = max(20, w - padding * 2)
+        bar_height = max(40, h - padding * 2)
+        bar_x = (w - bar_width) // 2
+        bar_y = (h - bar_height) // 2
+
+        # Fondo del contenedor
+        painter.setBrush(QBrush(QColor(230, 230, 230)))
+        painter.setPen(QPen(QColor(150, 150, 150), 1))
+        painter.drawRoundedRect(bar_x, bar_y, bar_width, bar_height, 6, 6)
+
+        # Barra de nivel
+        fill_height = int(bar_height * (value / 100))
+        fill_y = bar_y + (bar_height - fill_height)
+
+        normalized = value / 100
+        if normalized < 0.5:
+            r = int(normalized * 2 * 255)
+            g = 200
+            b = int(255 - normalized * 2 * 255)
+        else:
+            r = 255
+            g = int(200 - (normalized - 0.5) * 2 * 200)
+            b = 0
+
+        painter.setBrush(QBrush(QColor(r, g, b)))
+        painter.setPen(Qt.NoPen)
+        if fill_height > 0:
+            painter.drawRoundedRect(bar_x + 2, fill_y + 2, bar_width - 4, fill_height - 4, 4, 4)
+
+        # Borde
+        painter.setPen(QPen(QColor(0, 0, 0), 1))
+        painter.setBrush(Qt.NoBrush)
+        painter.drawRoundedRect(bar_x, bar_y, bar_width, bar_height, 6, 6)
+
+
 class CircularGaugeWidget(QWidget):
-    """Widget medidor circular para humedad de suelo"""
+    """Widget medidor de barra para humedad de suelo"""
     
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
@@ -81,16 +136,17 @@ class CircularGaugeWidget(QWidget):
         self.value = 0
         
         layout = QVBoxLayout()
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
         title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
         
-        self.gauge_widget = QWidget()
-        self.gauge_widget.setMinimumSize(200, 200)
-        layout.addWidget(self.gauge_widget)
+        self.bar_widget = SoilBarWidget(self)
+        layout.addWidget(self.bar_widget, alignment=Qt.AlignCenter)
         
         self.value_label = QLabel("0%")
-        self.value_label.setFont(QFont("Arial", 14, QFont.Bold))
+        self.value_label.setFont(QFont("Arial", 11, QFont.Bold))
         self.value_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.value_label)
         
@@ -100,28 +156,49 @@ class CircularGaugeWidget(QWidget):
         """Actualiza valor del medidor (0-100)"""
         self.value = max(0, min(100, value))
         self.value_label.setText(f"{self.value:.0f}%")
-        self.gauge_widget.update()
+        self.bar_widget.update()
     
     def paintEvent(self, event):
-        """Dibuja el medidor circular"""
-        if self.sender() != self.gauge_widget:
-            return
-        
-        painter = QPainter(self.gauge_widget)
+        """Sin pintura directa: la barra se dibuja en SoilBarWidget"""
+        super().paintEvent(event)
+
+
+class VerticalBarWidget(QWidget):
+    """Widget interno para pintar una barra vertical"""
+
+    def __init__(self, parent=None, min_value: float = 0, max_value: float = 100):
+        super().__init__(parent)
+        self.min_value = min_value
+        self.max_value = max_value
+        self.setMinimumSize(80, 140)
+
+    def paintEvent(self, event):
+        parent = self.parent()
+        value = getattr(parent, "value", 0)
+        value = max(self.min_value, min(self.max_value, value))
+
+        painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        
-        w = self.gauge_widget.width()
-        h = self.gauge_widget.height()
-        center_x = w // 2
-        center_y = h // 2
-        radius = min(w, h) // 2 - 10
-        
-        # Círculo de fondo
-        painter.setBrush(QBrush(QColor(200, 200, 200)))
-        painter.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
-        
-        # Círculo coloreado según valor
-        normalized = self.value / 100
+
+        w = self.width()
+        h = self.height()
+        padding = 6
+        bar_width = max(20, w - padding * 2)
+        bar_height = max(40, h - padding * 2)
+        bar_x = (w - bar_width) // 2
+        bar_y = (h - bar_height) // 2
+
+        # Fondo del contenedor
+        painter.setBrush(QBrush(QColor(230, 230, 230)))
+        painter.setPen(QPen(QColor(150, 150, 150), 1))
+        painter.drawRoundedRect(bar_x, bar_y, bar_width, bar_height, 6, 6)
+
+        # Barra de nivel
+        normalized = 0 if self.max_value == self.min_value else (value - self.min_value) / (self.max_value - self.min_value)
+        normalized = max(0, min(1, normalized))
+        fill_height = int(bar_height * normalized)
+        fill_y = bar_y + (bar_height - fill_height)
+
         if normalized < 0.5:
             r = int(normalized * 2 * 255)
             g = 200
@@ -130,15 +207,16 @@ class CircularGaugeWidget(QWidget):
             r = 255
             g = int(200 - (normalized - 0.5) * 2 * 200)
             b = 0
-        
+
         painter.setBrush(QBrush(QColor(r, g, b)))
-        angle = int(360 * (self.value / 100))
-        painter.drawPie(center_x - radius, center_y - radius, radius * 2, radius * 2, 0, angle * 16)
-        
+        painter.setPen(Qt.NoPen)
+        if fill_height > 0:
+            painter.drawRoundedRect(bar_x + 2, fill_y + 2, bar_width - 4, fill_height - 4, 4, 4)
+
         # Borde
-        painter.setPen(QPen(QColor(0, 0, 0), 2))
+        painter.setPen(QPen(QColor(0, 0, 0), 1))
         painter.setBrush(Qt.NoBrush)
-        painter.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
+        painter.drawRoundedRect(bar_x, bar_y, bar_width, bar_height, 6, 6)
 
 
 class BrightnessIndicatorWidget(QWidget):
@@ -147,51 +225,32 @@ class BrightnessIndicatorWidget(QWidget):
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
         self.title = title
-        self.brightness = 0
+        self.value = 0
+        self.min_value = 0
+        self.max_value = 100
         
         layout = QVBoxLayout()
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
         title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
         
-        self.brightness_display = QWidget()
-        self.brightness_display.setMinimumHeight(80)
-        layout.addWidget(self.brightness_display)
+        self.brightness_display = VerticalBarWidget(self, self.min_value, self.max_value)
+        layout.addWidget(self.brightness_display, alignment=Qt.AlignCenter)
         
         self.value_label = QLabel("Brillo: 0%")
-        self.value_label.setFont(QFont("Arial", 11, QFont.Bold))
+        self.value_label.setFont(QFont("Arial", 9, QFont.Bold))
         self.value_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.value_label)
         
         self.setLayout(layout)
     
     def update_value(self, value: float):
-        """Actualiza brillo (0-1023 -> 0-100%)"""
-        self.brightness = max(0, min(100, (value / 1023) * 100))
-        self.value_label.setText(f"Brillo: {self.brightness:.0f}%")
+        """Actualiza brillo (0-100%)"""
+        self.value = max(self.min_value, min(self.max_value, value))
+        self.value_label.setText(f"Brillo: {self.value:.0f}%")
         self.brightness_display.update()
-    
-    def paintEvent(self, event):
-        """Dibuja indicador de brillo"""
-        if self.sender() != self.brightness_display:
-            return
-        
-        painter = QPainter(self.brightness_display)
-        painter.setRenderHint(QPainter.Antialiasing)
-        
-        w = self.brightness_display.width()
-        h = self.brightness_display.height()
-        
-        # Fondo oscuro
-        painter.fillRect(0, 0, w, h, QColor(50, 50, 50))
-        
-        # Área de brillo
-        bright_width = int(w * (self.brightness / 100))
-        painter.fillRect(0, 0, bright_width, h, QColor(255, 255, 100))
-        
-        # Borde
-        painter.setPen(QPen(QColor(200, 200, 200), 2))
-        painter.drawRect(0, 0, w, h)
 
 
 class DigitalIndicatorWidget(QWidget):
@@ -203,17 +262,19 @@ class DigitalIndicatorWidget(QWidget):
         self.state = False
         
         layout = QVBoxLayout()
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
         title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
         
         self.indicator = QFrame()
-        self.indicator.setMinimumSize(100, 100)
+        self.indicator.setMinimumSize(70, 70)
         self.indicator.setStyleSheet("background-color: red; border: 3px solid darkred; border-radius: 10px;")
         layout.addWidget(self.indicator)
         
         self.state_label = QLabel("DESACTIVADO")
-        self.state_label.setFont(QFont("Arial", 11, QFont.Bold))
+        self.state_label.setFont(QFont("Arial", 9, QFont.Bold))
         self.state_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.state_label)
         
@@ -232,6 +293,52 @@ class DigitalIndicatorWidget(QWidget):
             self.state_label.setStyleSheet("color: red; font-weight: bold;")
 
 
+class JoystickCanvasWidget(QWidget):
+    """Widget interno para pintar el joystick"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(160, 160)
+        self.setStyleSheet("background-color: white; border: 2px solid black;")
+
+    def paintEvent(self, event):
+        parent = self.parent()
+        x = getattr(parent, "x", 0)
+        y = getattr(parent, "y", 0)
+        button_pressed = getattr(parent, "button_pressed", False)
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w = self.width()
+        h = self.height()
+        center_x = w // 2
+        center_y = h // 2
+
+        # Dibujar ejes
+        painter.setPen(QPen(QColor(200, 200, 200), 1))
+        painter.drawLine(0, center_y, w, center_y)  # Eje X
+        painter.drawLine(center_x, 0, center_x, h)  # Eje Y
+
+        # Escala
+        painter.setPen(QPen(QColor(200, 200, 200), 0.5))
+        for i in range(-100, 101, 20):
+            pixel_x = center_x + (i / 100) * (w / 2)
+            pixel_y = center_y - (i / 100) * (h / 2)
+            painter.drawPoint(int(pixel_x), center_y)
+            painter.drawPoint(center_x, int(pixel_y))
+
+        # Posición del joystick
+        pixel_x = center_x + (x / 100) * (w / 2 - 10)
+        pixel_y = center_y - (y / 100) * (h / 2 - 10)
+
+        # Color según botón
+        color = QColor(0, 150, 255) if button_pressed else QColor(100, 100, 100)
+        painter.setBrush(QBrush(color))
+        painter.setPen(QPen(QColor(0, 0, 0), 2))
+        painter.drawEllipse(int(pixel_x) - 5, int(pixel_y) - 5, 10, 10)
+
+
 class JoystickDisplayWidget(QWidget):
     """Widget para visualizar posición del joystick XY"""
     
@@ -243,17 +350,17 @@ class JoystickDisplayWidget(QWidget):
         self.button_pressed = False
         
         layout = QVBoxLayout()
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
         title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
         
-        self.joystick_display = QWidget()
-        self.joystick_display.setMinimumSize(200, 200)
-        self.joystick_display.setStyleSheet("background-color: white; border: 2px solid black;")
+        self.joystick_display = JoystickCanvasWidget(self)
         layout.addWidget(self.joystick_display)
         
         self.values_label = QLabel("X: 0  Y: 0  Botón: --")
-        self.values_label.setFont(QFont("Arial", 10))
+        self.values_label.setFont(QFont("Arial", 9))
         self.values_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.values_label)
         
@@ -268,117 +375,40 @@ class JoystickDisplayWidget(QWidget):
         button_text = "PRESIONADO" if button else "LIBRE"
         self.values_label.setText(f"X: {self.x:.0f}  Y: {self.y:.0f}  Botón: {button_text}")
         self.joystick_display.update()
-    
-    def paintEvent(self, event):
-        """Dibuja la cruz y punto del joystick"""
-        if self.sender() != self.joystick_display:
-            return
-        
-        painter = QPainter(self.joystick_display)
-        painter.setRenderHint(QPainter.Antialiasing)
-        
-        w = self.joystick_display.width()
-        h = self.joystick_display.height()
-        center_x = w // 2
-        center_y = h // 2
-        
-        # Dibujar ejes
-        painter.setPen(QPen(QColor(200, 200, 200), 1))
-        painter.drawLine(0, center_y, w, center_y)  # Eje X
-        painter.drawLine(center_x, 0, center_x, h)  # Eje Y
-        
-        # Escala
-        painter.setPen(QPen(QColor(200, 200, 200), 0.5))
-        for i in range(-100, 101, 20):
-            pixel_x = center_x + (i / 100) * (w / 2)
-            pixel_y = center_y - (i / 100) * (h / 2)
-            painter.drawPoint(int(pixel_x), center_y)
-            painter.drawPoint(center_x, int(pixel_y))
-        
-        # Posición del joystick
-        pixel_x = center_x + (self.x / 100) * (w / 2 - 10)
-        pixel_y = center_y - (self.y / 100) * (h / 2 - 10)
-        
-        # Color según botón
-        color = QColor(0, 150, 255) if self.button_pressed else QColor(100, 100, 100)
-        painter.setBrush(QBrush(color))
-        painter.setPen(QPen(QColor(0, 0, 0), 2))
-        painter.drawEllipse(int(pixel_x) - 5, int(pixel_y) - 5, 10, 10)
 
 
 class RotaryWidget(QWidget):
-    """Widget para visualizar potenciómetro con aguja rotatoria"""
+    """Widget para visualizar potenciómetro con barra vertical"""
     
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
         self.title = title
-        self.angle = 0
+        self.value = 0
+        self.min_value = 0
+        self.max_value = 100
         
         layout = QVBoxLayout()
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
         title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
         
-        self.rotary_display = QWidget()
-        self.rotary_display.setMinimumSize(150, 150)
-        layout.addWidget(self.rotary_display)
+        self.rotary_display = VerticalBarWidget(self, self.min_value, self.max_value)
+        layout.addWidget(self.rotary_display, alignment=Qt.AlignCenter)
         
         self.value_label = QLabel("0%")
-        self.value_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.value_label.setFont(QFont("Arial", 10, QFont.Bold))
         self.value_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.value_label)
         
         self.setLayout(layout)
     
     def update_value(self, value: float):
-        """Actualiza ángulo (0-255 -> 0-360°)"""
-        normalized = max(0, min(1, value / 255))
-        self.angle = normalized * 300 - 150  # -150° a 150°
-        percentage = normalized * 100
-        self.value_label.setText(f"{percentage:.0f}%")
+        """Actualiza valor (0-100%)"""
+        self.value = max(self.min_value, min(self.max_value, value))
+        self.value_label.setText(f"{self.value:.0f}%")
         self.rotary_display.update()
-    
-    def paintEvent(self, event):
-        """Dibuja el dial rotatorio"""
-        if self.sender() != self.rotary_display:
-            return
-        
-        painter = QPainter(self.rotary_display)
-        painter.setRenderHint(QPainter.Antialiasing)
-        
-        w = self.rotary_display.width()
-        h = self.rotary_display.height()
-        center_x = w // 2
-        center_y = h // 2
-        radius = min(w, h) // 2 - 10
-        
-        # Círculo de fondo
-        painter.setBrush(QBrush(QColor(220, 220, 220)))
-        painter.setPen(QPen(QColor(0, 0, 0), 2))
-        painter.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
-        
-        # Marcas de escala
-        painter.setPen(QPen(QColor(0, 0, 0), 1))
-        for i in range(0, 7):
-            angle = -150 + i * 50
-            rad = np.radians(angle)
-            x1 = center_x + (radius - 5) * np.cos(rad)
-            y1 = center_y - (radius - 5) * np.sin(rad)
-            x2 = center_x + radius * np.cos(rad)
-            y2 = center_y - radius * np.sin(rad)
-            painter.drawLine(int(x1), int(y1), int(x2), int(y2))
-        
-        # Aguja
-        painter.setPen(QPen(QColor(255, 0, 0), 3))
-        rad = np.radians(self.angle)
-        needle_length = radius - 15
-        x = center_x + needle_length * np.cos(rad)
-        y = center_y - needle_length * np.sin(rad)
-        painter.drawLine(center_x, center_y, int(x), int(y))
-        
-        # Centro
-        painter.setBrush(QBrush(QColor(0, 0, 0)))
-        painter.drawEllipse(center_x - 5, center_y - 5, 10, 10)
 
 
 class KeyboardDisplayWidget(QWidget):
@@ -390,8 +420,10 @@ class KeyboardDisplayWidget(QWidget):
         self.last_key = None
         
         layout = QVBoxLayout()
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
         title_label = QLabel(title)
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 10, QFont.Bold))
         layout.addWidget(title_label)
         
         # Matriz de botones 4x4
@@ -402,24 +434,23 @@ class KeyboardDisplayWidget(QWidget):
         
         self.key_buttons = {}
         keyboard_frame = QWidget()
-        keyboard_layout = QVBoxLayout()
+        keyboard_layout = QGridLayout()
+        keyboard_layout.setSpacing(3)
         
-        for row in keys:
-            row_layout = QVBoxLayout()
-            for key in row:
+        for row_idx, row in enumerate(keys):
+            for col_idx, key in enumerate(row):
                 btn = QPushButton(key)
-                btn.setMinimumSize(40, 40)
-                btn.setFont(QFont("Arial", 10, QFont.Bold))
+                btn.setMinimumSize(28, 28)
+                btn.setFont(QFont("Arial", 8, QFont.Bold))
                 btn.setStyleSheet("background-color: lightgray; border: 1px solid black;")
-                row_layout.addWidget(btn)
+                keyboard_layout.addWidget(btn, row_idx, col_idx)
                 self.key_buttons[key] = btn
-            keyboard_layout.addLayout(row_layout)
         
         keyboard_frame.setLayout(keyboard_layout)
         layout.addWidget(keyboard_frame)
         
         self.pressed_label = QLabel("Última tecla: --")
-        self.pressed_label.setFont(QFont("Arial", 11, QFont.Bold))
+        self.pressed_label.setFont(QFont("Arial", 9, QFont.Bold))
         self.pressed_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.pressed_label)
         

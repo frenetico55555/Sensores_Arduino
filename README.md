@@ -4,16 +4,21 @@ GUI en Python para visualizar señales de sensores conectados a Arduino en tiemp
 
 ## Sensores soportados
 
-- **LM35**: Temperatura ambiente (gráfico en tiempo real)
-- **DHT22**: Temperatura y humedad relativa (gráficos en tiempo real)
-- **Sensor de humedad de suelo**: Medidor circular
-- **LDR (Fotoresistor)**: Indicador de brillo visual
-- **Sensor de llama**: Indicador digital (verde/rojo)
-- **Tilt Switch**: Indicador digital (verde/rojo)
-- **Botón táctil**: Indicador digital (verde/rojo)
-- **Joystick XY**: Visualización de posición con cruz
-- **Potenciómetro**: Aguja rotatoria
-- **Teclado 4x4**: Visualización de teclas presionadas
+### Sensores analógicos
+- **LM35**: Temperatura ambiente (°C) - Gráfico de línea en tiempo real con gradiente de color
+- **DHT22**: Temperatura (°C) y humedad relativa (%) - Gráficos de línea en tiempo real
+- **Sensor de humedad de suelo**: Barra vertical (0-100%)
+- **LDR (Fotoresistor)**: Barra vertical de brillo (0-100%)
+- **Potenciómetro**: Barra vertical (0-100%)
+
+### Sensores digitales
+- **Sensor de llama**: Indicador visual (verde/rojo)
+- **Tilt Switch**: Indicador visual (verde/rojo)
+- **Botón táctil**: Indicador visual (verde/rojo)
+
+### Controles de entrada
+- **Joystick XY**: Visualización de posición con ejes y punto móvil
+- **Teclado 4x4**: Matriz de teclas con resaltado de última tecla presionada
 
 ## Instalación
 
@@ -57,13 +62,34 @@ Sensores_Arduino/
 
 ## Características
 
-- ✅ Gráficos en tiempo real con escala de colores
-- ✅ Medidores circulares para porcentajes
-- ✅ Indicadores digitales (ON/OFF)
-- ✅ Visualización de joystick XY
-- ✅ Potenciómetro con aguja rotatoria
-- ✅ Teclado 4x4 interactivo
-- ✅ Interfaz responsiva y atractiva
+- ✅ Gráficos en tiempo real con escala de colores (gradiente azul-verde-rojo)
+- ✅ Barras verticales para mediciones analógicas
+- ✅ Indicadores digitales visuales (ON/OFF)
+- ✅ Visualización de joystick XY con ejes de referencia
+- ✅ Teclado 4x4 interactivo con resaltado visual
+- ✅ Interfaz compacta sin scroll (todo visible de un vistazo)
+- ✅ Valores ergonómicos para humanos (°C, %)
+- ✅ Simulación de datos para pruebas sin hardware
+
+## Visualizaciones
+
+### Gráficos de línea
+Los sensores de temperatura (LM35, DHT22) y humedad relativa muestran gráficos en tiempo real que cambian de color según el valor:
+- **Azul**: valores bajos
+- **Verde**: valores medios  
+- **Rojo**: valores altos
+
+### Barras verticales
+Humedad de suelo, luz ambiental y potenciómetro usan barras que se llenan progresivamente con el mismo esquema de colores.
+
+### Indicadores digitales
+Los sensores binarios (llama, tilt, botón) muestran cuadros grandes que cambian de **rojo** (desactivado) a **verde** (activado).
+
+### Joystick
+Visualización de plano XY con cruz de referencia y punto móvil que cambia de color cuando se presiona el botón.
+
+### Teclado
+Matriz 4x4 que resalta en amarillo la última tecla presionada.
 
 ## Próximos pasos
 

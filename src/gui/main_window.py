@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QGridLayout, QLabel, QScrollArea)
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
+                             QGridLayout, QLabel)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
 from src.gui.widgets import (
@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Arduino Sensor Monitor - GUI")
-        self.setGeometry(100, 100, 1600, 1000)
+        self.setGeometry(100, 100, 1400, 900)
         
         # Inicializar simulador
         self.simulator = SensorSimulator()
@@ -24,19 +24,19 @@ class MainWindow(QMainWindow):
         # Crear contenedor principal
         main_widget = QWidget()
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setSpacing(6)
         
         # Título
         title = QLabel("Monitor de Sensores Arduino")
-        title.setFont(QFont("Arial", 16, QFont.Bold))
+        title.setFont(QFont("Arial", 14, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(title)
         
-        # Scroll área para widgets
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_widget = QWidget()
+        # Grid principal (sin scroll)
         grid_layout = QGridLayout()
-        grid_layout.setSpacing(15)
+        grid_layout.setSpacing(8)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
         
         # ===== FILA 1: TEMPERATURAS Y HUMEDAD =====
         self.lm35_graph = LineGraphWidget("Temperatura LM35", min_val=15, max_val=35)
@@ -76,9 +76,7 @@ class MainWindow(QMainWindow):
         self.keyboard = KeyboardDisplayWidget("Teclado 4x4")
         grid_layout.addWidget(self.keyboard, 3, 2)
         
-        scroll_widget.setLayout(grid_layout)
-        scroll_area.setWidget(scroll_widget)
-        main_layout.addWidget(scroll_area)
+        main_layout.addLayout(grid_layout)
         
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
