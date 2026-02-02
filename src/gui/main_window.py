@@ -8,6 +8,7 @@ from src.gui.widgets import (
     KeyboardDisplayWidget
 )
 from src.sensors.sensor_data import SensorSimulator
+from src.sensors.arduino_serial import ArduinoSerial, SensorReading
 
 
 class MainWindow(QMainWindow):
@@ -20,6 +21,18 @@ class MainWindow(QMainWindow):
         
         # Inicializar simulador
         self.simulator = SensorSimulator()
+        
+        # Inicializar comunicación con Arduino
+        self.arduino = ArduinoSerial()
+        self.arduino_connected = False
+        self.button_real_value = None  # Almacenar último valor real del botón
+        
+        # Intentar conectar a Arduino
+        self.arduino_connected = self.arduino.connect(callback=self.on_arduino_data)
+        if self.arduino_connected:
+            print("✅ Arduino conectado - usando datos reales del botón")
+        else:
+            print("⚠️  Arduino no conectado - usando simulador para todos los sensores")
         
         # Crear contenedor principal
         main_widget = QWidget()
@@ -88,6 +101,12 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.update_sensors)
         self.timer.start(100)  # Actualizar cada 100ms
     
+    def on_arduino_data(self, reading: SensorReading):
+        """Callback cuando Arduino envía datos"""
+        if reading.name == "BUTTON":
+            # 1 = presionado, 0 = suelto
+            self.button_real_value = bool(reading.value)
+    
     def update_sensors(self):
         """Actualiza todos los sensores con datos simulados"""
         
@@ -118,8 +137,12 @@ class MainWindow(QMainWindow):
         tilt_data = self.simulator.get_tilt_switch()
         self.tilt_switch.update_state(tilt_data.state)
         
-        button_data = self.simulator.get_button()
-        self.button_sensor.update_state(button_data.state)
+        # Botón: usar dato real si está conectado, sino simulador
+        if self.arduino_connected and self.button_real_value is not None:
+            self.button_sensor.update_state(self.button_real_value)
+        else:
+            button_data = self.simulator.get_button()
+            self.button_sensor.update_state(button_data.state)
         
         # Joystick
         joystick_data = self.simulator.get_joystick()
@@ -132,3 +155,10 @@ class MainWindow(QMainWindow):
         
         # Avanzar simulación
         self.simulator.update()
+    
+    def closeEvent(self, event):
+        """Ejecuta al cerrar la ventana"""
+        self.timer.stop()
+        if self.arduino_connected:
+            self.arduino.disconnect()
+        event.accept()
