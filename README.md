@@ -5,6 +5,7 @@ GUI en Python/PyQt5 para visualizar señales de sensores conectados a Arduino en
 ## Sensores soportados
 
 ### Sensores analógicos
+
 - **LM35**: Temperatura ambiente (°C) - Gráfico de línea en tiempo real con gradiente de color
 - **DHT22**: Temperatura (°C) y humedad relativa (%) - Gráficos de línea en tiempo real
 - **Sensor de humedad de suelo**: Barra vertical (0-100%)
@@ -12,17 +13,20 @@ GUI en Python/PyQt5 para visualizar señales de sensores conectados a Arduino en
 - **Potenciómetro**: Barra vertical (0-100%)
 
 ### Sensores digitales
+
 - **Sensor de llama**: Indicador visual (verde/rojo)
 - **Tilt Switch**: Indicador visual (verde/rojo)
 - **Botón táctil**: Indicador visual (verde/rojo) ✅ **FUNCIONANDO CON HARDWARE REAL**
 
 ### Controles de entrada
+
 - **Joystick XY**: Visualización de posición con ejes y punto móvil
 - **Teclado 4x4**: Matriz de teclas con resaltado de última tecla presionada
 
 ## Instalación
 
 ### 1. Crear entorno virtual
+
 ```bash
 cd Sensores_Arduino
 python3 -m venv venv
@@ -31,11 +35,13 @@ source venv/bin/activate  # En macOS/Linux
 ```
 
 ### 2. Instalar dependencias
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 3. Instalar Arduino-CLI (para cargar sketches)
+
 ```bash
 # macOS
 curl -L -o /tmp/arduino-cli.tar.gz https://github.com/arduino/arduino-cli/releases/download/v1.4.1/arduino-cli_1.4.1_macOS_64bit.tar.gz
@@ -51,7 +57,9 @@ sudo mv arduino-cli /usr/local/bin/
 ## Ejecución
 
 ### Modo con hardware real (si Arduino está conectado)
+
 La app intenta conectar automáticamente a Arduino al iniciar:
+
 - Si **encuentra Arduino**: usa datos reales del botón (D2) en tiempo real ✅
 - Si **no lo encuentra**: fallback a simulador para todos los sensores
 
@@ -60,7 +68,9 @@ python3 src/main.py
 ```
 
 ### Prueba del botón en tiempo real
+
 Para verificar que Arduino-Button está enviando datos correctamente:
+
 ```bash
 python3 test_button.py
 ```
@@ -68,6 +78,7 @@ python3 test_button.py
 ## Hardware
 
 ### Wiring (conexiones)
+
 ```
 Arduino Uno
 ├─ D2: Botón (digital input con PULLUP interno)
@@ -77,6 +88,7 @@ Arduino Uno
 ```
 
 ### Carga del sketch
+
 ```bash
 # Instalar board package para Arduino Uno
 arduino-cli core install arduino:avr
@@ -128,12 +140,14 @@ Sensores_Arduino/
 ## Comunicación Arduino
 
 ### Método: PySerial directo (sin Firmata)
+
 - **Baudrate**: 9600
 - **Formato**: Texto separado por comas
   - Ejemplo: `BUTTON,1` (presionado), `BUTTON,0` (suelto)
 - **Threading**: Lectura en hilo separado para no bloquear UI
 
 ### Flujo de datos
+
 ```
 Arduino sketch (button_sketch.ino)
     ↓ (serial @9600)
@@ -149,21 +163,27 @@ GUI actualiza en tiempo real
 ## Visualizaciones
 
 ### Gráficos de línea
+
 Sensores de temperatura y humedad muestran gráficos con colores dinámicos:
+
 - **Azul**: valores bajos
 - **Verde**: valores medios  
 - **Rojo**: valores altos
 
 ### Barras verticales
+
 Humedad de suelo, luz ambiental y potenciómetro con mismo esquema de colores.
 
 ### Indicadores digitales
+
 Sensores binarios: **rojo** (OFF) ↔ **verde** (ON)
 
 ### Joystick
+
 Plano XY con cruz de referencia y punto que cambia de color al presionar.
 
 ### Teclado
+
 Matriz 4x4 con resaltado en amarillo de última tecla presionada.
 
 ## Testing
@@ -182,6 +202,7 @@ python3 check_firmata.py
 ## Próximos sensores
 
 Listos para integrar en orden de simplicidad:
+
 1. Potenciómetro (pin A0)
 2. LDR / Luz ambiental (pin A1)
 3. Humedad de suelo (pin A2)
@@ -195,18 +216,11 @@ Listos para integrar en orden de simplicidad:
 ## Dependencias
 
 Ver `requirements.txt`:
+
 - PyQt5 ≥ 5.15.0
 - PyQtGraph ≥ 0.13.0
 - pyserial ≥ 3.5
 - numpy ≥ 1.21.0
-
-
-## Dependencias
-
-- PyQt5: Interfaz gráfica
-- PyQtGraph: Gráficos en tiempo real
-- PySerial: Comunicación con Arduino
-- NumPy: Cálculos numéricos
 
 ## Notas
 
