@@ -29,8 +29,10 @@ class MainWindow(QMainWindow):
         
         # Título
         title = QLabel("Monitor de Sensores Arduino")
-        title.setFont(QFont("Arial", 14, QFont.Bold))
-        title.setAlignment(Qt.AlignCenter)
+        font = QFont("Arial", 14)
+        font.setBold(True)
+        title.setFont(font)
+        title.setAlignment(Qt.AlignCenter)  # type: ignore
         main_layout.addWidget(title)
         
         # Grid principal (sin scroll)

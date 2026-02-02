@@ -68,7 +68,10 @@ class LineGraphWidget(QWidget):
         # Usar tupla de color para PyQtGraph
         color_tuple = (r, g, b)
         self.curve.setPen(pg.mkPen(color_tuple, width=2))
-        self.curve.setData(list(self.data_points))
+        
+        # Invertir datos para que el tiempo fluya de izquierda (pasado) a derecha (presente)
+        data_reversed = list(reversed(self.data_points))
+        self.curve.setData(data_reversed)
         
         # Color para label en formato rgb()
         self.value_label.setText(f"Valor: {value:.2f}")
