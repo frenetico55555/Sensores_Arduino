@@ -73,13 +73,13 @@ Para verificar que Arduino-Button está enviando datos correctamente:
 
 ```bash
 python3 test_button.py
-```
+```bash
 
 ## Hardware
 
 ### Wiring (conexiones)
 
-```
+```text
 Arduino Uno
 ├─ D2: Botón (digital input con PULLUP interno)
 │  ├─ Botón cable rojo → D2
@@ -95,13 +95,13 @@ arduino-cli core install arduino:avr
 
 # Compilar y cargar sketch
 ./upload_sketch.sh
-```
+```bash
 
 El sketch se carga automáticamente en `/button_sketch/button_sketch.ino`
 
 ## Estructura del proyecto
 
-```
+```text
 Sensores_Arduino/
 ├── src/
 │   ├── gui/
@@ -148,7 +148,7 @@ Sensores_Arduino/
 
 ### Flujo de datos
 
-```
+```text
 Arduino sketch (button_sketch.ino)
     ↓ (serial @9600)
 ArduinoSerial.py (thread de lectura)
