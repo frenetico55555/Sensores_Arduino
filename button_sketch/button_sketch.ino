@@ -1,24 +1,31 @@
 /*
- * Button Sensor Sketch
- * Lee un botón en el pin D2 y envía el estado por serial
- * Formato: BUTTON,0 o BUTTON,1
+ * Multi-Sensor Sketch
+ * Lee sensores y envía datos por serial
+ * Formato: SENSOR,valor
  */
 
+// Pines
 const int BUTTON_PIN = 2;
+const int POT_PIN = A0;
+
+// Configuración
 const int BAUD_RATE = 9600;
 const int READ_INTERVAL = 100; // ms
 
+// Estados previos
 int lastButtonState = -1;
+int lastPotValue = -1;
 unsigned long lastReadTime = 0;
 
 void setup() {
   Serial.begin(BAUD_RATE);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(POT_PIN, INPUT);
   
-  // Esperar a que Serial esté listo (importante para algunos Arduinos)
+  // Esperar a que Serial esté listo
   delay(2000);
   
-  Serial.println("BUTTON_READY");
+  Serial.println("SENSORS_READY");
 }
 
 void loop() {
@@ -27,17 +34,25 @@ void loop() {
   if (currentTime - lastReadTime >= READ_INTERVAL) {
     lastReadTime = currentTime;
     
-    // Leer el botón (LOW = presionado, HIGH = suelto)
+    // ===== BOTÓN DIGITAL =====
     int buttonState = digitalRead(BUTTON_PIN);
-    
-    // Enviar solo si cambió o es la primera lectura
     if (buttonState != lastButtonState) {
       lastButtonState = buttonState;
-      
-      // Convertir: LOW (presionado) = 1, HIGH (suelto) = 0
       int state = (buttonState == LOW) ? 1 : 0;
       Serial.print("BUTTON,");
       Serial.println(state);
+    }
+    
+    // ===== POTENCIÓMETRO ANALÓGICO =====
+    int potValue = analogRead(POT_PIN);
+    // Convertir de 0-1023 a 0-100 para porcentaje
+    int potPercent = map(potValue, 0, 1023, 0, 100);
+    
+    // Enviar si cambió más de 2% (reducir ruido)
+    if (abs(potPercent - lastPotValue) >= 2) {
+      lastPotValue = potPercent;
+      Serial.print("POT,");
+      Serial.println(potPercent);
     }
   }
 }

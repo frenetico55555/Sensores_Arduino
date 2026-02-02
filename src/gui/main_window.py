@@ -26,11 +26,12 @@ class MainWindow(QMainWindow):
         self.arduino = ArduinoSerial()
         self.arduino_connected = False
         self.button_real_value = None  # Almacenar último valor real del botón
+        self.pot_real_value = None  # Almacenar último valor real del potenciómetro
         
         # Intentar conectar a Arduino
         self.arduino_connected = self.arduino.connect(callback=self.on_arduino_data)
         if self.arduino_connected:
-            print("✅ Arduino conectado - usando datos reales del botón")
+            print("✅ Arduino conectado - usando datos reales del botón y potenciómetro")
         else:
             print("⚠️  Arduino no conectado - usando simulador para todos los sensores")
         
@@ -106,6 +107,9 @@ class MainWindow(QMainWindow):
         if reading.name == "BUTTON":
             # 1 = presionado, 0 = suelto
             self.button_real_value = bool(reading.value)
+        elif reading.name == "POT":
+            # 0-100 %
+            self.pot_real_value = reading.value
     
     def update_sensors(self):
         """Actualiza todos los sensores con datos simulados"""
@@ -127,8 +131,12 @@ class MainWindow(QMainWindow):
         light_data = self.simulator.get_light_ldr()
         self.light_indicator.update_value(light_data.value)
         
-        pot_data = self.simulator.get_potentiometer()
-        self.potentiometer.update_value(pot_data.value)
+        # Potenciómetro: usar dato real si está conectado, sino simulador
+        if self.arduino_connected and self.pot_real_value is not None:
+            self.potentiometer.update_value(self.pot_real_value)
+        else:
+            pot_data = self.simulator.get_potentiometer()
+            self.potentiometer.update_value(pot_data.value)
         
         # Sensores digitales
         flame_data = self.simulator.get_flame_sensor()

@@ -63,7 +63,7 @@ class ArduinoSerial:
             try:
                 if self.ser.in_waiting > 0:
                     line = self.ser.readline().decode('utf-8', errors='ignore').strip()
-                    if line and line != "BUTTON_READY":
+                    if line and not line.endswith("_READY"):
                         self._parse_and_callback(line)
             except Exception as e:
                 print(f"Error leyendo: {e}")
@@ -80,7 +80,7 @@ class ArduinoSerial:
                 reading = SensorReading(
                     name=sensor_name,
                     value=int(value) if sensor_name == "BUTTON" else value,
-                    units="" if sensor_name == "BUTTON" else "",
+                    units="%" if sensor_name == "POT" else "",
                     timestamp=time.time()
                 )
                 
