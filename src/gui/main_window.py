@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                              QGridLayout, QLabel)
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QCloseEvent
+from typing import Optional
 from src.gui.widgets import (
     LineGraphWidget, CircularGaugeWidget, BrightnessIndicatorWidget,
     DigitalIndicatorWidget, JoystickDisplayWidget, RotaryWidget,
@@ -164,9 +165,10 @@ class MainWindow(QMainWindow):
         # Avanzar simulación
         self.simulator.update()
     
-    def closeEvent(self, event):
+    def closeEvent(self, a0: Optional[QCloseEvent]) -> None:
         """Ejecuta al cerrar la ventana"""
         self.timer.stop()
         if self.arduino_connected:
             self.arduino.disconnect()
-        event.accept()
+        if a0:
+            a0.accept()
