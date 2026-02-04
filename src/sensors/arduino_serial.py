@@ -77,10 +77,15 @@ class ArduinoSerial:
                 sensor_name = parts[0]
                 value = float(parts[1])
                 
+                # Determinar unidades según sensor
+                units = ""
+                if sensor_name in ["POT", "LDR"]:
+                    units = "%"
+                
                 reading = SensorReading(
                     name=sensor_name,
                     value=int(value) if sensor_name == "BUTTON" else value,
-                    units="%" if sensor_name == "POT" else "",
+                    units=units,
                     timestamp=time.time()
                 )
                 

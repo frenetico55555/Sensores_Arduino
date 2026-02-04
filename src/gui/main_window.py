@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
         self.arduino_connected = False
         self.button_real_value = None  # Almacenar último valor real del botón
         self.pot_real_value = None  # Almacenar último valor real del potenciómetro
+        self.ldr_real_value = None  # Almacenar último valor real del LDR
         
         # Intentar conectar a Arduino
         self.arduino_connected = self.arduino.connect(callback=self.on_arduino_data)
@@ -111,6 +112,9 @@ class MainWindow(QMainWindow):
         elif reading.name == "POT":
             # 0-100 %
             self.pot_real_value = reading.value
+        elif reading.name == "LDR":
+            # 0-100 % de luz
+            self.ldr_real_value = reading.value
     
     def update_sensors(self):
         """Actualiza todos los sensores con datos simulados"""
@@ -129,8 +133,12 @@ class MainWindow(QMainWindow):
         soil_data = self.simulator.get_soil_humidity()
         self.soil_humidity.update_value(soil_data.value)
         
-        light_data = self.simulator.get_light_ldr()
-        self.light_indicator.update_value(light_data.value)
+        # LDR: usar dato real si está conectado, sino simulador
+        if self.arduino_connected and self.ldr_real_value is not None:
+            self.light_indicator.update_value(self.ldr_real_value)
+        else:
+            light_data = self.simulator.get_light_ldr()
+            self.light_indicator.update_value(light_data.value)
         
         # Potenciómetro: usar dato real si está conectado, sino simulador
         if self.arduino_connected and self.pot_real_value is not None:
