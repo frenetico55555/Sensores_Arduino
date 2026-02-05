@@ -81,6 +81,8 @@ class ArduinoSerial:
                 units = ""
                 if sensor_name in ["POT", "LDR"]:
                     units = "%"
+                elif sensor_name == "LM35":
+                    units = "°C"
                 
                 reading = SensorReading(
                     name=sensor_name,

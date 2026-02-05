@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         self.button_real_value = None  # Almacenar último valor real del botón
         self.pot_real_value = None  # Almacenar último valor real del potenciómetro
         self.ldr_real_value = None  # Almacenar último valor real del LDR
+        self.lm35_real_value = None  # Almacenar último valor real del LM35
         
         # Intentar conectar a Arduino
         self.arduino_connected = self.arduino.connect(callback=self.on_arduino_data)
@@ -115,13 +116,19 @@ class MainWindow(QMainWindow):
         elif reading.name == "LDR":
             # 0-100 % de luz
             self.ldr_real_value = reading.value
+        elif reading.name == "LM35":
+            # °C
+            self.lm35_real_value = reading.value
     
     def update_sensors(self):
         """Actualiza todos los sensores con datos simulados"""
         
         # Temperaturas
-        lm35_data = self.simulator.get_temperature_lm35()
-        self.lm35_graph.update_value(lm35_data.value)
+        if self.arduino_connected and self.lm35_real_value is not None:
+            self.lm35_graph.update_value(self.lm35_real_value)
+        else:
+            lm35_data = self.simulator.get_temperature_lm35()
+            self.lm35_graph.update_value(lm35_data.value)
         
         dht_temp_data = self.simulator.get_dht_temperature()
         self.dht_temp_graph.update_value(dht_temp_data.value)

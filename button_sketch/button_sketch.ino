@@ -8,6 +8,7 @@
 const int BUTTON_PIN = 2;
 const int POT_PIN = A0;
 const int LDR_PIN = A1;
+const int LM35_PIN = A3;
 
 // Configuración
 const int BAUD_RATE = 9600;
@@ -17,6 +18,7 @@ const int READ_INTERVAL = 100; // ms
 int lastButtonState = -1;
 int lastPotValue = -1;
 int lastLdrValue = -1;
+float lastLm35Value = -1000.0;
 unsigned long lastReadTime = 0;
 
 void setup() {
@@ -67,6 +69,18 @@ void loop() {
       lastLdrValue = ldrPercent;
       Serial.print("LDR,");
       Serial.println(ldrPercent);
+    }
+
+    // ===== LM35 TEMPERATURA =====
+    int lm35Raw = analogRead(LM35_PIN);
+    float voltage = lm35Raw * (5.0 / 1023.0);
+    float temperatureC = voltage * 100.0; // 10 mV/°C
+
+    // Enviar si cambió más de 0.5°C (reducir ruido)
+    if (abs(temperatureC - lastLm35Value) >= 0.5) {
+      lastLm35Value = temperatureC;
+      Serial.print("LM35,");
+      Serial.println(temperatureC, 1);
     }
   }
 }
