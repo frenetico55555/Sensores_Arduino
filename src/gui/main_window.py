@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Arduino Sensor Monitor - GUI")
+        self.setWindowTitle("Monitor de Actividad de Sensores Arduino Diseñado por Rodrigo Figueroa")
         self.setGeometry(100, 100, 1400, 900)
         
         # Inicializar simulador
