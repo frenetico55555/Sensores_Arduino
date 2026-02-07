@@ -63,7 +63,8 @@ class ArduinoSerial:
             try:
                 if self.ser.in_waiting > 0:
                     line = self.ser.readline().decode('utf-8', errors='ignore').strip()
-                    if line and not line.endswith("_READY"):
+                    # Ignorar líneas que no son datos de sensores
+                    if line and not line.endswith("_READY") and "Offset" not in line and "Calibrando" not in line:
                         self._parse_and_callback(line)
             except Exception as e:
                 print(f"Error leyendo: {e}")
@@ -75,21 +76,35 @@ class ArduinoSerial:
             parts = line.split(',')
             if len(parts) >= 2:
                 sensor_name = parts[0]
-                value = float(parts[1])
                 
-                # Determinar unidades según sensor
-                units = ""
-                if sensor_name in ["POT", "LDR"]:
-                    units = "%"
-                elif sensor_name == "LM35":
-                    units = "°C"
-                
-                reading = SensorReading(
-                    name=sensor_name,
-                    value=int(value) if sensor_name == "BUTTON" else value,
-                    units=units,
-                    timestamp=time.time()
-                )
+                # Casos especiales con múltiples valores
+                if sensor_name == "JOYSTICK" and len(parts) == 3:
+                    # Joystick tiene formato: JOYSTICK,X,Y
+                    x_value = float(parts[1])
+                    y_value = float(parts[2])
+                    reading = SensorReading(
+                        name="JOYSTICK",
+                        value=(int(x_value), int(y_value)),
+                        units="%",
+                        timestamp=time.time()
+                    )
+                else:
+                    # Sensores de un solo valor
+                    value = float(parts[1])
+                    
+                    # Determinar unidades según sensor
+                    units = ""
+                    if sensor_name in ["POT", "LDR", "JOYSTICK_BTN"]:
+                        units = "%"
+                    elif sensor_name == "LM35":
+                        units = "°C"
+                    
+                    reading = SensorReading(
+                        name=sensor_name,
+                        value=int(value) if sensor_name in ["BUTTON", "JOYSTICK_BTN"] else value,
+                        units=units,
+                        timestamp=time.time()
+                    )
                 
                 if self.callback:
                     self.callback(reading)

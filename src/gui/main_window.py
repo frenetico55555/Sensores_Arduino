@@ -30,6 +30,7 @@ class MainWindow(QMainWindow):
         self.pot_real_value = None  # Almacenar último valor real del potenciómetro
         self.ldr_real_value = None  # Almacenar último valor real del LDR
         self.lm35_real_value = None  # Almacenar último valor real del LM35
+        self.joystick_real_value = None  # Almacenar último valor real del joystick (x, y)
         
         # Intentar conectar a Arduino
         self.arduino_connected = self.arduino.connect(callback=self.on_arduino_data)
@@ -119,6 +120,9 @@ class MainWindow(QMainWindow):
         elif reading.name == "LM35":
             # °C
             self.lm35_real_value = reading.value
+        elif reading.name == "JOYSTICK":
+            # Tupla (x, y) en porcentaje
+            self.joystick_real_value = reading.value
     
     def update_sensors(self):
         """Actualiza todos los sensores con datos simulados"""
@@ -168,9 +172,16 @@ class MainWindow(QMainWindow):
             button_data = self.simulator.get_button()
             self.button_sensor.update_state(button_data.state)
         
-        # Joystick
-        joystick_data = self.simulator.get_joystick()
-        self.joystick.update_values(joystick_data.x, joystick_data.y, joystick_data.button)
+        # Joystick: usar dato real si está conectado, sino simulador
+        if self.arduino_connected and self.joystick_real_value is not None:
+            x, y = self.joystick_real_value
+            # Convertir de -100 a +100 a 0-100 para el widget
+            x_normalized = int((x + 100) / 2)
+            y_normalized = int((-y + 100) / 2)  # Y invertido
+            self.joystick.update_values(x_normalized, y_normalized, 0)
+        else:
+            joystick_data = self.simulator.get_joystick()
+            self.joystick.update_values(joystick_data.x, joystick_data.y, joystick_data.button)
         
         # Teclado
         key = self.simulator.get_keyboard()
